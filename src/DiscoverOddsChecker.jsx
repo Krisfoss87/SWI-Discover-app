@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } = require("react");
 
 // ————————————————————————————————————————————————
 // Two models fitted on 8,292 stories (published Apr 2025 – Apr 2026,
@@ -81,6 +81,8 @@ export default function DiscoverOddsChecker() {
   const [title, setTitle] = useState("");
   const [format, setFormat] = useState("fmt_news");
   const [timing, setTiming] = useState("weekday_midday");
+  const [precedents, setPrecedents] = useState([]);
+  const [precedentsLoading, setPrecedentsLoading] = useState(false);
 
   const result = useMemo(() => {
     const { f, words } = featuresFor(title, format);
@@ -132,6 +134,37 @@ export default function DiscoverOddsChecker() {
 
     return { p, pEnter, words, f, suggestions, ctr, themesHit };
   }, [title, format, timing]);
+
+  // Fetch similar stories from internal API (debounced 500ms)
+  useEffect(() => {
+    if (!title.trim()) { setPrecedents([]); return; }
+    
+    setPrecedentsLoading(true);
+    const t = setTimeout(() => {
+      const apiHost = process.env.REACT_APP_API_HOST || "http://localhost:8000";
+      const apiKey = process.env.REACT_APP_API_KEY;
+      
+      if (!apiKey) {
+        console.warn("REACT_APP_API_KEY not set; precedents disabled");
+        setPrecedentsLoading(false);
+        return;
+      }
+      
+      fetch(`${apiHost}/similar?q=${encodeURIComponent(title)}&k=5&key=${encodeURIComponent(apiKey)}`, 
+            { signal: AbortSignal.timeout(3000) })
+        .then(r => {
+          if (r.ok) return r.json();
+          throw new Error(`HTTP ${r.status}`);
+        })
+        .then(setPrecedents)
+        .catch(err => {
+          console.log("Precedents lookup unavailable:", err.message);
+          setPrecedents([]);
+        })
+        .finally(() => setPrecedentsLoading(false));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [title]);
 
   const { p } = result;
   const pct = Math.round(p * 1000) / 10;
@@ -260,6 +293,26 @@ export default function DiscoverOddsChecker() {
                     {c.ok ? "✓ " : "△ "}{c.text}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Precedents panel — "Stories like yours" */}
+            {precedents.length > 0 && (
+              <div style={{ backgroundColor: "#F9F9F9", padding: "16px", borderLeft: "4px solid #8A8A8A" }}>
+                <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A8A8A", fontWeight: 700, marginBottom: 10 }}>
+                  Stories like yours {precedentsLoading && "(loading...)"}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                  {precedents.map((p, i) => (
+                    <div key={i} style={{ fontSize: 13, lineHeight: 1.4, paddingBottom: 8, borderBottom: i < precedents.length - 1 ? "1px solid #EEE" : "none" }}>
+                      <div style={{ fontWeight: 600, color: "#111" }}>{p.Title}</div>
+                      <div style={{ fontSize: 12, color: "#8A8A8A", marginTop: 2 }}>
+                        {p.Discover_clicks > 0 ? `${p.Discover_clicks} clicks` : "Never entered Discover"}
+                        {p.Publish_date && ` · ${new Date(p.Publish_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
