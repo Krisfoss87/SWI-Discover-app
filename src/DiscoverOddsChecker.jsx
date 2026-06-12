@@ -9,12 +9,12 @@ import { useState, useMemo, useEffect } from "react";
 // ————————————————————————————————————————————————
 const MODELS = {
   enter: {
-    coefs: { transport: 0.5982, aviation: 1.0936, weather_alps: 0.579, money: 0.4714, crime_incident: 0.2012, migration: -0.359, animals_science: 0.4708, health_aging: -0.1609, geopolitics: -0.263, politics_inst: -1.6262, celebs: -0.1349, food: 1.0471, has_swiss: 0.6146, short_title: 0.125, long_title: 0.0801, has_number: 0.278, has_question: 0.084, has_colon: -0.1957, fmt_news: 1.0422, fmt_explainer: 1.0909, fmt_report: 0.5228, fmt_dead: -1.7775, pub_weekend: 0.4257, pub_midday: 0.1652 },
-    intercept: -1.63, baseline: 0.3166,
+    coefs: { transport: 0.5963, aviation: 1.0763, weather_alps: 0.5716, money: 0.3768, crime_incident: 0.1472, death_victims: 0.3825, migration: -0.3802, animals_science: 0.4623, energy_solar: -0.1541, local_places: 0.173, education: 0.5751, housing: 0.5082, health_aging: -0.1844, geopolitics: -0.2697, politics_inst: -1.6386, celebs: -0.1158, food: 1.1118, markets_wrap: -2.307, has_swiss: 0.5749, short_title: 0.0915, long_title: 0.0902, has_number: 0.2752, has_question: 0.0348, has_colon: 0.1568, fmt_news: 1.0615, fmt_explainer: 1.0815, fmt_report: 0.4982, fmt_dead: -1.3923, pub_weekend: 0.3856, pub_midday: 0.1239 },
+    intercept: -1.6149, baseline: 0.3166,
   },
   big: {
-    coefs: { transport: 0.5752, aviation: 1.2247, weather_alps: 0.4195, money: 0.477, crime_incident: 0.6137, migration: 0.1778, animals_science: -0.0184, health_aging: -0.0628, geopolitics: -0.2468, politics_inst: -1.8233, celebs: -0.2769, food: 0.4509, has_swiss: 1.4503, short_title: 0.3513, long_title: 0.1435, has_number: -0.0107, has_question: -0.0389, has_colon: -0.4442, fmt_news: 0.5255, fmt_explainer: 0.6723, fmt_report: 0.7841, fmt_dead: -2.4211, pub_weekend: 0.645, pub_midday: -0.3496 },
-    intercept: -4.8182, baseline: 0.0279,
+    coefs: { transport: 0.582, aviation: 1.2612, weather_alps: 0.4137, money: 0.3617, crime_incident: 0.5446, death_victims: 0.5129, migration: 0.1569, animals_science: 0.0201, energy_solar: -0.4443, local_places: 0.5263, education: 1.0218, housing: -0.1507, health_aging: -0.0273, geopolitics: -0.2126, politics_inst: -1.7911, celebs: -0.262, food: 0.4672, markets_wrap: 0.0464, has_swiss: 1.661, short_title: 0.3921, long_title: 0.1525, has_number: 0.0234, has_question: -0.013, has_colon: -0.4649, fmt_news: 0.4131, fmt_explainer: 0.6437, fmt_report: 0.7237, fmt_dead: -2.4173, pub_weekend: 0.6397, pub_midday: -0.3411 },
+    intercept: -5.0015, baseline: 0.0279,
   },
 };
 const COEFS = MODELS.big.coefs;        // primary readout: odds of a 5,000+ click hit
@@ -28,13 +28,19 @@ const THEMES = [
   ["weather_alps", /snow|glacier|avalanche|storm|weather|heatwave|flood|alpine|alps|mountain pass|winter/i, "Weather, Alps & glaciers"],
   ["money", /salar|wage|pension|rent|mortgage|price|cost|tax|wealth|rich|franc|inflation|insurance/i, "Money & cost of living"],
   ["crime_incident", /police|arrest|riot|court|prison|crime|theft|murder|attack|fire|rescue|crash|seiz|fraud|smuggl|trafficking/i, "Crime & incidents"],
+  ["death_victims", /dies|dead|death|killed|victims|fatal|body found/i, "Deaths & victims"],
   ["migration", /deport|visa|migrat|citizen|permit|asylum|abroad|expat|naturali|immigrant|residence/i, "Migration & citizenship"],
   ["animals_science", /dog|wolf|bear|jellyfish|animal|bird|fish|cow|species|wildlife|scientist|study|research/i, "Animals & science"],
+  ["energy_solar", /solar|nuclear|electricity|power plant|hydro|wind power|heat pump|energy/i, "Energy & solar"],
+  ["local_places", /zurich|geneva|basel|bern|lausanne|lucerne|canton|village|ticino|valais|grisons/i, "Named Swiss places"],
+  ["education", /school|education|university|student|apprentice|teacher|pupil/i, "Education"],
+  ["housing", /housing|real estate|apartment|property|landlord|tenant|homeowner/i, "Housing & property"],
   ["health_aging", /health|hospital|cancer|disease|vaccine|virus|ageing|aging|retire/i, "Health & ageing"],
   ["geopolitics", /\beu\b|europe|neutrality|nato|tariff|trump|ukraine|russia|sanction/i, "EU & geopolitics"],
   ["politics_inst", /parliament|vote|referendum|initiative|minister|election|party|council/i, "Institutional politics"],
   ["celebs", /star|celebrit|festival|concert|band|singer|actor|film/i, "Celebrities & entertainment"],
   ["food", /chocolate|cheese|wine|food|restaurant|coffee|beer/i, "Food & drink"],
+  ["markets_wrap", /wrap|stocks|shares mixed|wall st|asian stocks|asian markets|bonds|futures|rally|markets/i, "Markets wrap (agency)"],
 ];
 
 const FORMATS = [
