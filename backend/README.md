@@ -1,19 +1,21 @@
 # Backend: Similar Stories & Corpus Management
 
-This folder contains the Python scripts for managing your Discover training corpus and similar-story lookup API.
+This folder contains the Python scripts for managing your Discover training corpus, similar-story lookup API, and topic momentum tracking.
 
 ## Files
 
 - **`build_corpus.py`** — Regenerates `discover-training-corpus.csv` from Parse.ly + GSC exports
-- **`api.py`** — FastAPI service for TF-IDF headline similarity lookup
+- **`api.py`** — FastAPI service for TF-IDF headline similarity lookup and topic momentum
 - **`similar_stories.py`** — TF-IDF vectorizer (should exist from your original code)
+- **`gsc_client.py`** — Google Search Console API client for Discover data
+- **`momentum.py`** — Entity momentum tracking from GSC Discover data
 
 ## Setup
 
 ### 1. Install dependencies
 
 ```bash
-pip install fastapi uvicorn scikit-learn pandas
+pip install fastapi uvicorn scikit-learn pandas google-auth requests
 ```
 
 ### 2. Generate the corpus
@@ -47,6 +49,52 @@ Deploy this on an internal VM or container host (not Vercel). The service needs 
 ```bash
 curl http://localhost:8000/health
 ```
+
+### 4. Set up Google Search Console API (for Topic Momentum)
+
+The momentum feature uses the official Search Console API to detect trending topics.
+
+**In Google Cloud Console:**
+1. Create (or reuse) a project
+2. Enable the **Search Console API**
+3. Create a **service account**
+4. Create a JSON key and download it
+5. Note the service account's email address (e.g., `your-service-account@project.iam.gserviceaccount.com`)
+
+**In Search Console:**
+1. Go to **Settings → Users and permissions**
+2. Add the service account's email address with **Full** permission
+   (restricted also works for read-only queries on most setups, but Full avoids surprises)
+
+**On the API host:**
+```bash
+# Install additional dependencies
+pip install google-auth requests
+
+# Set environment variables (or use a .env file)
+export GSC_CREDENTIALS_FILE=/path/to/your-service-account-key.json
+export GSC_PROPERTY="sc-domain:swissinfo.ch"  # or "https://www.swissinfo.ch/"
+
+# Add the JSON key to .gitignore
+echo "*.json" >> .gitignore
+```
+
+**Test the momentum endpoint:**
+```bash
+curl "http://localhost:8000/momentum?q=glacier%20collapse%20alps&key=YOUR_API_KEY"
+```
+
+**Behavior notes:**
+- The first request after each cache expiry (default 6 hours) takes a few seconds (it pulls ~10 days of page-level data)
+- `dataState: "all"` includes fresh data so the signal is hours old rather than days, at the cost of the newest day being slightly incomplete — fine for a ratio
+- Quota is a non-issue at this usage (the table refreshes at most four times a day, well under the API's limits)
+
+**Tuning thresholds:**
+The momentum detection uses two thresholds (tunable via environment variables):
+- `MOMENTUM_MIN_IMPR` (default: 3000) - minimum impressions for a term to be considered
+- `MOMENTUM_TTL_HOURS` (default: 6) - cache refresh interval
+
+Watch it for a week — if it flags something on most headlines, raise `MOMENTUM_MIN_IMPR`. The panel only earns attention if it stays rare.
 
 ## Quarterly Retraining Checklist
 

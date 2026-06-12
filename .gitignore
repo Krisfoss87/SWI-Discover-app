@@ -35,3 +35,8 @@ discover-training-corpus.csv
 gsc_discover_zips/
 *.csv
 parsely_export*.csv
+
+# Google Service Account keys — NEVER COMMIT
+*.json
+!package.json
+!vite.config.js

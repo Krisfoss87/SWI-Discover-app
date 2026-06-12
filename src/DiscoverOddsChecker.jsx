@@ -83,6 +83,7 @@ export default function DiscoverOddsChecker() {
   const [timing, setTiming] = useState("weekday_midday");
   const [precedents, setPrecedents] = useState([]);
   const [precedentsLoading, setPrecedentsLoading] = useState(false);
+  const [momentum, setMomentum] = useState(null);
 
   const result = useMemo(() => {
     const { f, words } = featuresFor(title, format);
@@ -163,6 +164,22 @@ export default function DiscoverOddsChecker() {
         })
         .finally(() => setPrecedentsLoading(false));
     }, 500);
+    return () => clearTimeout(t);
+  }, [title]);
+
+  // Fetch momentum data from internal API (debounced 700ms)
+  useEffect(() => {
+    if (!title.trim()) { setMomentum(null); return; }
+    const t = setTimeout(() => {
+      const apiHost = import.meta.env.VITE_API_HOST || "http://localhost:8000";
+      const apiKey = import.meta.env.VITE_API_KEY;
+      if (!apiKey) return;
+      fetch(`${apiHost}/momentum?q=${encodeURIComponent(title)}&key=${encodeURIComponent(apiKey)}`,
+            { signal: AbortSignal.timeout(5000) })
+        .then(r => (r.ok ? r.json() : null))
+        .then(setMomentum)
+        .catch(() => setMomentum(null));
+    }, 700);
     return () => clearTimeout(t);
   }, [title]);
 
@@ -293,6 +310,25 @@ export default function DiscoverOddsChecker() {
                     {c.ok ? "✓ " : "△ "}{c.text}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Momentum panel */}
+            {momentum && momentum.matched.length > 0 && (
+              <div style={{ backgroundColor: "#FFF8F0", padding: "16px", borderLeft: "4px solid #C77700" }}>
+                <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C77700", fontWeight: 700, marginBottom: 10 }}>
+                  Topic momentum — publish sooner, not later
+                </div>
+                {momentum.matched.map((m, i) => (
+                  <div key={i} style={{ fontSize: 14, padding: "4px 0" }}>
+                    <strong>'{m.term}'</strong> is running at <strong>{m.ratio}×</strong> its normal
+                    Discover impressions on our site over the last 48h
+                    ({m.recent_impressions.toLocaleString()} impressions).
+                  </div>
+                ))}
+                <div style={{ fontSize: 12, color: "#8A8A8A", marginTop: 6 }}>
+                  Discover momentum typically lasts days, not weeks — a story riding a hot topic should not wait for Thursday.
+                </div>
               </div>
             )}
 

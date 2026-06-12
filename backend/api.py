@@ -1,6 +1,6 @@
 """
-api.py — Internal endpoint for similar-stories TF-IDF lookup
-Requires: pip install fastapi uvicorn scikit-learn pandas
+api.py — Internal endpoint for similar-stories TF-IDF lookup and momentum
+Requires: pip install fastapi uvicorn scikit-learn pandas google-auth requests
 
 Runs as an internal service. Requires API_KEY environment variable at deploy time.
 Never commit the key to the repo.
@@ -26,6 +26,14 @@ try:
 except ImportError:
     print("⚠ similar_stories module not found. Corpus lookup disabled.")
     corpus_available = False
+
+# Optionally load momentum module if GSC credentials are set
+try:
+    from momentum import get_momentum
+    momentum_available = True
+except ImportError:
+    print("⚠ momentum module not found. Momentum lookup disabled.")
+    momentum_available = False
 
 app = FastAPI()
 
@@ -71,11 +79,30 @@ def get_similar(q: str, k: int = 5, key: str = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lookup failed: {str(e)}")
 
+@app.get("/momentum")
+def momentum(q: str, key: str = None):
+    """Hot Discover topics matching this headline, from our own GSC data."""
+    if not API_KEY:
+        raise HTTPException(status_code=500, detail="API_KEY not configured on server")
+    if key != API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    if not q or not q.strip():
+        return {"matched": [], "site_hot": []}
+    if not momentum_available:
+        raise HTTPException(status_code=503, detail="Momentum module not available; ensure GSC credentials are set")
+    try:
+        return get_momentum(q)
+    except KeyError as e:
+        raise HTTPException(status_code=503, detail=f"GSC env var missing: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"GSC query failed: {e}")
+
 @app.get("/health")
 def health():
     """Health check endpoint"""
     return {
         "status": "ok",
         "corpus_available": corpus_available,
+        "momentum_available": momentum_available,
         "api_key_configured": API_KEY is not None,
     }
