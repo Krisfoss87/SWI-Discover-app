@@ -1,0 +1,16 @@
+{
+  "name": "swi-discover-app",
+  "version": "1.0.0",
+  "description": "Discover Odds Checker - Headline prediction tool for swissinfo.ch",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next": "^14.0.0"
+  }
+}
