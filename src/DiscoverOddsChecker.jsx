@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } = require("react");
+import { useState, useMemo, useEffect } from "react";
 
 // ————————————————————————————————————————————————
 // Two models fitted on 8,292 stories (published Apr 2025 – Apr 2026,
@@ -9,11 +9,11 @@ import { useState, useMemo, useEffect } = require("react");
 // ————————————————————————————————————————————————
 const MODELS = {
   enter: {
-    coefs: { transport: 0.5982, aviation: 1.0936, weather_alps: 0.579, money: 0.4714, crime_incident: 0.2012, migration: -0.359, animals_science: 0.4708, health_aging: -0.1609, geopolitics: -0.263, politics_inst: -0.4142, celebs: 0.5944, food: 0.8344, fmt_explainer: 0.5476, fmt_news: 0.3184, fmt_dead: -1.6934, pub_weekend: 0.2373, pub_midday: 0.2056, has_swiss: 0.1838, short_title: 0.3844, long_title: -0.5319, has_number: 0.0667, has_question: 0.1024, has_colon: 0.0814 },
+    coefs: { transport: 0.5982, aviation: 1.0936, weather_alps: 0.579, money: 0.4714, crime_incident: 0.2012, migration: -0.359, animals_science: 0.4708, health_aging: -0.1609, geopolitics: -0.263, politics_inst: -1.6262, celebs: -0.1349, food: 1.0471, has_swiss: 0.6146, short_title: 0.125, long_title: 0.0801, has_number: 0.278, has_question: 0.084, has_colon: -0.1957, fmt_news: 1.0422, fmt_explainer: 1.0909, fmt_report: 0.5228, fmt_dead: -1.7775, pub_weekend: 0.4257, pub_midday: 0.1652 },
     intercept: -1.63, baseline: 0.3166,
   },
   big: {
-    coefs: { transport: 0.5752, aviation: 1.2247, weather_alps: 0.4195, money: 0.477, crime_incident: 0.6137, migration: 0.1778, animals_science: -0.0184, health_aging: -0.0628, geopolitics: -0.246, politics_inst: -0.3921, celebs: 0.4971, food: 0.4994, fmt_explainer: 0.7065, fmt_news: 0.0889, fmt_dead: -1.2984, pub_weekend: 0.5908, pub_midday: 0.2196, has_swiss: 0.1686, short_title: 0.2832, long_title: -0.3629, has_number: 0.0856, has_question: 0.1527, has_colon: -0.0173 },
+    coefs: { transport: 0.5752, aviation: 1.2247, weather_alps: 0.4195, money: 0.477, crime_incident: 0.6137, migration: 0.1778, animals_science: -0.0184, health_aging: -0.0628, geopolitics: -0.2468, politics_inst: -1.8233, celebs: -0.2769, food: 0.4509, has_swiss: 1.4503, short_title: 0.3513, long_title: 0.1435, has_number: -0.0107, has_question: -0.0389, has_colon: -0.4442, fmt_news: 0.5255, fmt_explainer: 0.6723, fmt_report: 0.7841, fmt_dead: -2.4211, pub_weekend: 0.645, pub_midday: -0.3496 },
     intercept: -4.8182, baseline: 0.0279,
   },
 };
@@ -141,11 +141,11 @@ export default function DiscoverOddsChecker() {
     
     setPrecedentsLoading(true);
     const t = setTimeout(() => {
-      const apiHost = process.env.REACT_APP_API_HOST || "http://localhost:8000";
-      const apiKey = process.env.REACT_APP_API_KEY;
+      const apiHost = import.meta.env.VITE_API_HOST || "http://localhost:8000";
+      const apiKey = import.meta.env.VITE_API_KEY;
       
       if (!apiKey) {
-        console.warn("REACT_APP_API_KEY not set; precedents disabled");
+        console.warn("VITE_API_KEY not set; precedents disabled");
         setPrecedentsLoading(false);
         return;
       }
@@ -307,8 +307,8 @@ export default function DiscoverOddsChecker() {
                     <div key={i} style={{ fontSize: 13, lineHeight: 1.4, paddingBottom: 8, borderBottom: i < precedents.length - 1 ? "1px solid #EEE" : "none" }}>
                       <div style={{ fontWeight: 600, color: "#111" }}>{p.Title}</div>
                       <div style={{ fontSize: 12, color: "#8A8A8A", marginTop: 2 }}>
-                        {p.Discover_clicks > 0 ? `${p.Discover_clicks} clicks` : "Never entered Discover"}
-                        {p.Publish_date && ` · ${new Date(p.Publish_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                        {p.discover_clicks > 0 ? `${p.discover_clicks} clicks` : "Never entered Discover"}
+                        {p.pub && ` · ${new Date(p.pub).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
                       </div>
                     </div>
                   ))}
@@ -320,7 +320,7 @@ export default function DiscoverOddsChecker() {
 
         {/* Footer */}
         <div style={{ marginTop: 48, paddingTop: 14, borderTop: "3px solid #111", fontSize: 12, color: "#8A8A8A", lineHeight: 1.6 }}>
-          Two calibrated models from the complete monthly Discover data — every English page with at least one click across all 14 full months, 8,292 stories — now including publish timing: baseline entry 32% (AUC 0.82), big-hit odds 2.8% (AUC 0.81). Thresholds set by Youden, not defaults.
+          Two calibrated models from the complete monthly Discover data — every English page with at least one click across all 14 full months, 8,292 stories — now including publish timing: baseline entry 32% (AUC 0.82), big-hit odds 2.8% (AUC 0.81).
         </div>
       </div>
     </div>
